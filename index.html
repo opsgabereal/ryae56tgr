@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Car Game</title>
+    <style>
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 400px;
+            background-color: #f0f0f0;
+        }
+
+        .player {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: blue;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <label for="username">Enter your name:</label>
+        <input type="text" id="username" />
+        <button onclick="joinGame()">Join Game</button>
+    </div>
+    
+    <div id="game-container"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script>
+        $(function () {
+            const socket = io();
+            const gameContainer = $('#game-container');
+
+            // Add this function to send the custom username to the server
+            function joinGame() {
+                const username = $('#username').val();
+                if (username.trim() !== '') {
+                    socket.emit('new user', username);
+                }
+            }
+
+            // Listen for updated player positions and names
+            socket.on('update players', function(players){
+                gameContainer.empty();
+                for (const [id, player] of Object.entries(players)) {
+                    // Display the player block with custom name
+                    gameContainer.append(`
+                        <div class="player" id="${id}" style="left:${player.x}px; top:${player.y}px;">
+                            ${player.username}
+                        </div>
+                    `);
+                }
+            });
+
+            // Listen for player movement
+            gameContainer.on('mousemove', function(e){
+                const position = {
+                    x: e.pageX - gameContainer.offset().left,
+                    y: e.pageY - gameContainer.offset().top,
+                };
+                socket.emit('player move', position);
+            });
+        });
+    </script>
+</body>
+</html>
